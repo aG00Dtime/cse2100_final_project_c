@@ -1,3 +1,5 @@
+/* David Henry USI 1007604 */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +17,31 @@ struct node {
 //set root to null;
 struct node * root = NULL;
 
-/* searching the tree until the english word is found and returns the node else return null */
+void create_dict();
+void translate();
+
+
+
+int main() {
+
+    // set locate to print special characters
+    setlocale(LC_ALL, "");
+
+    // create bst from file
+    create_dict();
+
+    // run translate
+    translate();
+
+
+    printf("\nExiting...");
+
+    return EXIT_SUCCESS;
+}
+
 struct node * search(char english[]) {
+
+    /* searches the tree until the english word is found and returns the node else returns null */
 
     struct node * current;
 
@@ -24,9 +49,9 @@ struct node * search(char english[]) {
 
     while (current != NULL) {
 
-        // check if word found
+        // check if word
         if (strcmp(current -> eng, english) == 0) {
-//            printf("%s ==> %s\n",current->eng,current->span);
+
             return current;
 
         }
@@ -42,8 +67,10 @@ struct node * search(char english[]) {
     return NULL;
 }
 
-// inserts pairs into tree
+
 void insert(char english[], char spanish[]) {
+
+    /* insert english and spanish word pairs into tree */
 
     struct node * temp = (struct node * ) malloc(sizeof(struct node));
 
@@ -91,12 +118,16 @@ void insert(char english[], char spanish[]) {
 
 }
 
-// remove white spaces and new lines from words to prevent errors
+
 char * remove_white_spaces(char * str) {
+
+    /* remove white spaces and new lines from words to prevent errors
+        https://www.faceprep.in/c/program-to-remove-spaces-from-a-string/
+    */
 
     int i = 0, j = 0;
 
-    while (str[i]) { // remove spaces and new lines
+    while (str[i]) {
 
         if (str[i] != ' ' && str[i] != '\n')
 
@@ -109,9 +140,10 @@ char * remove_white_spaces(char * str) {
     return str;
 }
 
-// reads the file and creates the bst
+
 void create_dict() {
 
+    /* reads the file and creates the bst*/
 
     char line[BUFFER_SIZE];
     char * eng, * spa;
@@ -144,7 +176,7 @@ void create_dict() {
 
 void translate(){
 
-
+    /* translator menu options */
 
     int ch;
     char *sentence[BUFFER_SIZE];
@@ -158,8 +190,7 @@ void translate(){
         fgets((char *) sentence, BUFFER_SIZE, stdin);
         fflush(stdin);
 
-
-
+        //split
         segment = strtok((char *) sentence, " ");
 
         printf("\nSpanish Sentence : ");
@@ -169,7 +200,6 @@ void translate(){
 
 
             // search and print word
-
             word = search(segment);
 
             if (word == NULL) {
@@ -178,7 +208,6 @@ void translate(){
             } else {
                 printf("%s ", word -> span);
             }
-
 
             segment = strtok(NULL, " ");
         }
@@ -198,18 +227,4 @@ void translate(){
     }
 }
 
-int main() {
-
-    // set locate to print special characters
-    setlocale(LC_ALL, "");
-
-    // create bst from file
-    create_dict();
-
-    // run translate
-    translate();
-
-
-
-    return EXIT_SUCCESS;
-}
+/* David Henry USI 1007604 */
