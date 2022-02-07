@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #define max_size 2048
 
 // struct to represent the puzzle
@@ -9,92 +10,76 @@ struct puzzle {
     char *region;
     struct puzzle *next;
 };
+struct words {
+    char *word ;
+    struct words *prev, *next;
+};
+
+// roots
+struct words *head = NULL;
 struct puzzle *root = NULL;
 
 
-void read_puzzle ( char *filename);
-void search_puzzle (char * word);
-char *remove_white_spaces (char *str);
-void search_by_word_length(int len);
+void parse_puzzle (char *filename);
+void create_word_list();
+void find_words(int len);
 
 
 int main(int argc , char *args[]) {
 
-    if (argc != 3){
-        printf("Example usage : solver [file name] [word size]\n");
-        printf("    solver puzzle 5\n");
+    if (argc < 3 || argc > 3){
+        printf("-> EXAMPLE USAGE : solver[puzzle name] [word size]\n    solver 8 5");
         exit(1);
     }
 
     int word_size = atoi(args[2]);
 
-    read_puzzle( args[1]);
-    search_by_word_length(word_size);
+    parse_puzzle(args[1]);
 
-    printf("\nFinished");
+    create_word_list();
+
+    clock_t start = clock();
+
+    find_words(word_size);
+
+    clock_t stop = clock();
+
+    double t = (double)(stop - start) / CLOCKS_PER_SEC;
+    printf("\nSearch took : %fs\n", t  );
 
     return EXIT_SUCCESS;
 }
-
-/***********************************************************/
-/*           search for words by length                    */
-/***********************************************************/
-void search_by_word_length(int len) {
-
-//    char temp[max_size+1];
-    char *temp = malloc(max_size *sizeof(temp));
-    if (temp==NULL){
-        printf("ERROR->TEMP");
-        exit(1);
-    }
-    char *word=malloc(max_size *sizeof(word));
-
-    if (word==NULL){
-        printf("ERROR->WORD");
-        exit(1);
-    }
-
-    FILE *new_file = fopen("lexis.txt", "r");
-
-    while (fgets(temp, max_size * sizeof(temp), new_file)) {
-
-        strcpy(word, remove_white_spaces(temp));
-
-        if (strlen(word) == len) {
-            search_puzzle(word);
-        }
-    }
-
-    fclose(new_file);
-    free(temp);
-    free(word);
-
-}
-
 /***********************************************************/
 /*           search the puzzle for words                   */
 /***********************************************************/
 void search_puzzle(char *word) {
-
     struct puzzle *temp;
     temp = root;
-
     while (temp != NULL) {
-
-
         // check if word exists in both directions
         if (strstr(temp->region, word) || strstr(strrev(temp->region), word)) {
-//            printf("%s\n",temp->region);
             printf("Word Found -> %s\n", word);
         }
         temp = temp->next;
     }
 }
+// find words
+void find_words(int len) {
+    struct words *temp;
+    temp = head;
+    printf("searching..\n");
 
+    while (temp != NULL) {
+        if (strlen(temp->word) == len){
+            search_puzzle(temp->word);
+        }
+        temp = temp->next;
+    }
+}
 /***********************************************************/
 /*           strip \0 and \n                               */
 /***********************************************************/
-char *remove_white_spaces(char *str) {
+char *clean(char *str) {
     int i = 0, j = 0;
     while (str[i]) { // remove spaces and new lines
         if (str[i] != ' ' && str[i] != '\n')
@@ -104,11 +89,64 @@ char *remove_white_spaces(char *str) {
     str[j] = '\0';
     return str;
 }
+/***********************************************************/
+/*           insert words into list                        */
+/***********************************************************/
+void insert_words(char *word){
+
+    struct words * temp;
+    temp = malloc(sizeof(*temp));
+    if (temp==NULL){
+        printf("ERROR-->TEMP");
+        exit(1);
+    }
+    unsigned size = strlen(word);
+
+    temp->word = malloc ( size * sizeof(char) + 1);
+
+    if (temp->word==NULL){
+        printf("ERROR-->temp->word");
+        exit(1);
+    }
+
+    strcpy(temp->word,word);
+
+
+    if (head == NULL){
+        temp->next = NULL;
+        temp->prev = NULL;
+        head=temp;
+    } else
+    {
+        temp->prev=NULL;
+        temp->next=head;
+        head->prev = temp;
+        head=temp;
+    }
+
+
+}
+
+void create_word_list(){
+
+    FILE *new_file = fopen("lexis.txt", "r");
+    char *new_word = malloc(sizeof(char) *255);
+
+    while (fgets(new_word, sizeof(new_word) * 255 , new_file)) {
+        if (new_word[0] == '\n'){
+            break;
+        }
+        insert_words(clean(new_word));
+    }
+    fclose(new_file);
+    free(new_word);
+    // sort here after
+}
 
 /***********************************************************/
 /*     insert regions into the puzzle linked list          */
 /***********************************************************/
-void insert(char *str) {
+void insert_regions(char *str) {
 
     struct puzzle *puzzle;
     struct puzzle *last_region = root;
@@ -119,19 +157,18 @@ void insert(char *str) {
         printf("ERROR->puzzle");
         exit(1);
     }
-
     puzzle->region = malloc (sizeof(char) * strlen(str) +1 );
 
     if (puzzle->region==NULL){
         printf("ERROR->puzzle->region");
         exit(1);
     }
-
     strcpy(puzzle->region, str);
     puzzle->next = NULL;
 
     if (root == NULL) {
         root = puzzle;
+
     } else {
         while (last_region->next != NULL) {
             last_region = last_region->next;
@@ -139,11 +176,10 @@ void insert(char *str) {
         last_region->next = puzzle;
     }
 }
-
 /***********************************************************/
 /*     read puzzle from file                               */
 /***********************************************************/
-void read_puzzle(char *filename) {
+void parse_puzzle(char *filename) {
 
     char file_txt[40];
     strcpy(file_txt,filename);
@@ -166,7 +202,7 @@ void read_puzzle(char *filename) {
         if (line[0]=='\n'){
             break;
         }
-        insert(remove_white_spaces(line));
+        insert_regions(clean(line));
     }
 
     fclose(file);
@@ -212,19 +248,14 @@ void read_puzzle(char *filename) {
             o++;
         }
         // add new column to linked list
-        insert(str);
+        insert_regions(str);
         k++;
     }
 
 //    //insert diags code here
 //    char (*string_array)[row_size];
-//
 //    string_array = malloc(columns * sizeof(char) + 1 );
-//
-//
-
 
 }
-
 
 
